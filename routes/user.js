@@ -1,3 +1,5 @@
+// routes/user.js
+
 import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -82,16 +84,10 @@ router.post("/login", async (req, res) => {
       expiresIn: "1h",
     });
 
-    // Set the token as a cookie
-    res.cookie("token", token, {
-      httpOnly: true, // Prevents client-side JavaScript from accessing the cookie
-      secure: process.env.NODE_ENV, // Use HTTPS in production
-      maxAge: 3600000, // 1 hour
-      sameSite: "lax", // Use 'lax' if you need to support cross-origin requests
-    });
-
-    // Successful login
-    return res.status(200).json({ status: true, message: "Login successful" });
+    // Return the token to the client
+    return res
+      .status(200)
+      .json({ status: true, message: "Login successful", token });
   } catch (error) {
     console.error("Error during user login:", error);
     return res
@@ -159,10 +155,12 @@ router.post("/reset-password/:token", async (req, res) => {
 
 const verifyUser = async (req, res, next) => {
   try {
-    const token = req.cookies.token;
-    if (!token) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
       return res.status(401).json({ status: false, message: "No token" });
     }
+
+    const token = authHeader.split(" ")[1]; // Extract the token
 
     // Verify the token
     const decoded = jwt.verify(token, process.env.KEY);
@@ -195,7 +193,7 @@ router.get("/verify", verifyUser, (req, res) => {
 });
 
 router.get("/logout", (req, res) => {
-  res.clearCookie("token");
+  // Clear local storage token on client-side
   return res.json({ status: true, message: "Logged out" });
 });
 
