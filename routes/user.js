@@ -160,12 +160,14 @@ router.post("/reset-password/:token", async (req, res) => {
 const verifyUser = async (req, res, next) => {
   try {
     const token = req.cookies.token;
+    console.log("Received token:", token);
     if (!token) {
       return res.status(401).json({ status: false, message: "No token" });
     }
 
     // Verify the token
     const decoded = jwt.verify(token, process.env.KEY);
+    console.log("Decoded token:", decoded);
 
     // Find the user by email
     const user = await User.findOne({ email: decoded.email });
