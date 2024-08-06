@@ -87,7 +87,7 @@ router.post("/login", async (req, res) => {
       httpOnly: true, // Prevents client-side JavaScript from accessing the cookie
       secure: process.env.NODE_ENV, // Use HTTPS in production
       maxAge: 3600000, // 1 hour
-      sameSite: "strict", // Use 'lax' if you need to support cross-origin requests
+      sameSite: "lax", // Use 'lax' if you need to support cross-origin requests
     });
 
     // Successful login
