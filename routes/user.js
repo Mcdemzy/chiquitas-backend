@@ -83,12 +83,7 @@ router.post("/login", async (req, res) => {
     });
 
     // Set the token as a cookie
-    res.cookie("token", token, {
-      httpOnly: true, // Prevents client-side JavaScript from accessing the cookie
-      secure: process.env.NODE_ENV, // Use HTTPS in production
-      maxAge: 3600000, // 1 hour
-      sameSite: "lax", // Use 'lax' if you need to support cross-origin requests
-    });
+    res.cookie("token", token, { httpOnly: true, maxAge: 3600000 });
 
     // Successful login
     return res.status(200).json({ status: true, message: "Login successful" });
@@ -161,37 +156,24 @@ const verifyUser = async (req, res, next) => {
   try {
     const token = req.cookies.token;
     if (!token) {
-      return res.status(401).json({ status: false, message: "No token" });
+      return res.json({ status: false, message: "No token" });
     }
-
-    // Verify the token
     const decoded = jwt.verify(token, process.env.KEY);
-
-    // Find the user by email
     const user = await User.findOne({ email: decoded.email });
+
     if (!user) {
-      return res.status(404).json({ status: false, message: "User not found" });
+      return res.json({ status: false, message: "User not found" });
     }
 
     req.user = user; // Attach user to request object
     next();
   } catch (err) {
-    // Handle specific JWT errors
-    if (err.name === "TokenExpiredError") {
-      return res.status(401).json({ status: false, message: "Token expired" });
-    } else if (err.name === "JsonWebTokenError") {
-      return res.status(401).json({ status: false, message: "Invalid token" });
-    }
-    // General error handling
-    console.error("Verification error:", err);
-    return res
-      .status(500)
-      .json({ status: false, error: "Internal server error" });
+    return res.json({ status: false, error: err.message });
   }
 };
 
 router.get("/verify", verifyUser, (req, res) => {
-  return res.status(200).json({ status: true, user: req.user });
+  return res.json({ status: true, user: req.user });
 });
 
 router.get("/logout", (req, res) => {
