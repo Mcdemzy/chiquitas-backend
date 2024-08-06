@@ -83,7 +83,11 @@ router.post("/login", async (req, res) => {
     });
 
     // Set the token as a cookie
-    res.cookie("token", token, { httpOnly: true, maxAge: 3600000 });
+    res.cookie("token", token, {
+      httpOnly: true, // Prevents client-side JavaScript from accessing the cookie
+      secure: process.env.NODE_ENV, // Use HTTPS in production
+      maxAge: 3600000, // 1 hour
+    });
 
     // Successful login
     return res.status(200).json({ status: true, message: "Login successful" });
