@@ -4,6 +4,7 @@ import express from "express";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import { UserRouter } from "./routes/user.js";
 import { StockRouter } from "./routes/stock.js";
 import { StaffRouter } from "./routes/staff.js";
@@ -16,6 +17,7 @@ const app = express();
 
 // Middleware
 app.use(express.json());
+app.use(cookieParser()); // Add cookie parser middleware
 
 const corsOptions = {
   origin: ["http://localhost:5173", "https://chiquitas-ims.vercel.app"],
@@ -32,17 +34,20 @@ app.use("/workdone", WorkdoneRouter);
 app.use("/record", RecordRouter);
 
 // Database Connection
-mongoose
-  .connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => {
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
     console.log("MongoDB connected");
-  })
-  .catch((error) => {
+  } catch (error) {
     console.error("MongoDB connection error:", error);
-  });
+    process.exit(1); // Exit process with failure
+  }
+};
+
+connectDB();
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
