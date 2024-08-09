@@ -172,6 +172,23 @@ router.get("/preview-stock/:id", async (req, res) => {
   }
 });
 
+// New endpoint to fetch the most recent 5 stocks
+router.get("/recent-stocks", async (req, res) => {
+  try {
+    const recentStocks = await Stock.find({})
+      .sort({ createdAt: -1 }) // Sort by creation date in descending order
+      .limit(5); // Limit the results to 5
+
+    res.status(200).json({ status: true, data: recentStocks });
+  } catch (error) {
+    console.error("Error fetching recent stocks:", error);
+    res.status(500).json({
+      status: false,
+      message: "An error occurred while fetching the recent stocks",
+    });
+  }
+});
+
 export { router as StockRouter };
 
 // Now I'll need your help with the implementation right but first I want you to explain what you think I want if you are correct then I'll tell you to proceed okay
