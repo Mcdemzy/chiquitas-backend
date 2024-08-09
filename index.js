@@ -20,7 +20,12 @@ app.use(express.json());
 app.use(cookieParser()); // Add cookie parser middleware
 
 const corsOptions = {
-  origin: ["http://localhost:5173", "https://chiquitas-ims.vercel.app"],
+  origin: [
+    "http://localhost:5173",
+    "https://chiquitas-ims.vercel.app",
+    "https://chiquitas-ims-jet.vercel.app/",
+    "https://chiquitas-ims-jet.vercel.app",
+  ],
   credentials: true,
 };
 
