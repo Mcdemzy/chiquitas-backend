@@ -78,12 +78,17 @@ router.post("/login", async (req, res) => {
     }
 
     // Generate a token
-    const token = jwt.sign({ email: user.email }, process.env.KEY, {
+    const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
 
     // Set the token as a cookie
-    res.cookie("token", token, { httpOnly: true, maxAge: 3600000 });
+    res.cookie("token", token, {
+      httpOnly: true,
+      maxAge: 3600000,
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+    });
 
     // Successful login
     return res.status(200).json({ status: true, message: "Login successful" });
@@ -105,7 +110,7 @@ router.post("/forgot-password", async (req, res) => {
       return res.status(404).json({ error: "User not registered" });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.KEY, {
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "5m",
     });
 
@@ -126,14 +131,15 @@ router.post("/forgot-password", async (req, res) => {
 
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
-        console.error(error);
+        console.error("Error sending email:", error);
         return res.status(500).json({ error: "Error sending email" });
       } else {
+        console.log("Email sent:", info.response);
         return res.json({ status: true, message: "Email sent" });
       }
     });
   } catch (err) {
-    console.error(err);
+    console.error("Error in forgot-password:", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -142,51 +148,34 @@ router.post("/reset-password/:token", async (req, res) => {
   const { token } = req.params;
   const { password } = req.body;
   try {
-    const decoded = await jwt.verify(token, process.env.KEY);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const id = decoded.id;
     const hashPassword = await bcrypt.hash(password, 10);
     await User.findByIdAndUpdate({ _id: id }, { password: hashPassword });
     return res.json({ status: true, message: "Updated Password" });
   } catch (err) {
-    return res.json("Invalid token");
+    console.error("Error resetting password:", err);
+    return res.status(400).json({ status: false, error: "Invalid token" });
   }
 });
-
-// const verifyUser = async (req, res, next) => {
-//   try {
-//     const token = req.cookies.token;
-//     if (!token) {
-//       return res.json({ status: false, message: "No token" });
-//     }
-//     const decoded = jwt.verify(token, process.env.KEY);
-//     const user = await User.findOne({ email: decoded.email });
-
-//     if (!user) {
-//       return res.json({ status: false, message: "User not found" });
-//     }
-
-//     req.user = user; // Attach user to request object
-//     next();
-//   } catch (err) {
-//     return res.json({ status: false, error: err.message });
-//   }
-// };
 
 const verifyUser = async (req, res, next) => {
   try {
     const token = req.cookies.token;
     if (!token) {
-      return res.json({ status: false, message: "No token" });
+      return res.status(401).json({ status: false, message: "No token" });
     }
-    const decoded = await jwt.verify(token, process.env.KEY);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // Optionally attach decoded user to the request
     next();
   } catch (err) {
-    return res.json(err);
+    console.error("Error verifying token:", err);
+    return res.status(401).json({ status: false, error: "Unauthorized" });
   }
 };
 
 router.get("/verify", verifyUser, (req, res) => {
-  return res.json({ status: true, message: "authorized" });
+  return res.json({ status: true, message: "Authorized" });
 });
 
 router.get("/logout", (req, res) => {
