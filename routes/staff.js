@@ -1,8 +1,7 @@
 import express from "express";
 import { Staff } from "../models/staff.js";
-
+import mongoose from "mongoose";
 const router = express.Router();
-
 router.post("/add-staff", async (req, res) => {
   const { staffName, email, phoneNumber, position, month, day, year } =
     req.body;
@@ -202,62 +201,56 @@ router.patch("/edit-work-done/:staffId/:workId", async (req, res) => {
     });
   }
 });
+// Endpoint to fetch the total number of staff
+router.get("/total-staffs", async (req, res) => {
+  try {
+    const totalStaffs = await Staff.countDocuments({});
 
-//delete workdone
-// Delete work done
-router.delete("/delete-workdone/:staffId/:workId", async (req, res) => {
-  const { staffId, workId } = req.params;
+    res.status(200).json({
+      status: true,
+      total: totalStaffs, // This should match what your frontend is expecting
+      message: "Total number of staff fetched successfully!",
+    });
+  } catch (error) {
+    console.error("Error fetching total number of staff:", error);
+    res.status(500).json({
+      status: false,
+      message: "An error occurred while fetching the total number of staff",
+    });
+  }
+});
+
+router.delete("/staff/:staffId/workdone/:workdoneId", async (req, res) => {
+  const { staffId, workdoneId } = req.params;
+
+  console.log(
+    `Deleting work done entry with ID ${workdoneId} for staff with ID ${staffId}`
+  );
 
   try {
-    console.log(
-      `Attempting to delete work done entry with staffId: ${staffId} and workId: ${workId}`
+    const staff = await Staff.findByIdAndUpdate(
+      staffId,
+      { $pull: { workDone: { _id: workdoneId } } },
+      { new: true }
     );
 
-    // Validate IDs
-    if (
-      !mongoose.Types.ObjectId.isValid(staffId) ||
-      !mongoose.Types.ObjectId.isValid(workId)
-    ) {
-      console.log("Invalid IDs provided");
-      return res.status(400).json({ status: false, message: "Invalid IDs" });
-    }
-
-    // Find the staff document
-    const staff = await Staff.findById(staffId);
     if (!staff) {
-      console.log("Staff not found");
+      console.log(`Staff with ID ${staffId} not found`);
       return res
         .status(404)
         .json({ status: false, message: "Staff not found" });
     }
 
-    // Find the work done entry and remove it
-    const workDoneIndex = staff.workDone.findIndex(
-      (entry) => entry._id.toString() === workId
-    );
-    if (workDoneIndex === -1) {
-      console.log("Work done entry not found");
-      return res
-        .status(404)
-        .json({ status: false, message: "Work done entry not found" });
-    }
-
-    // Remove the work done entry from the array
-    staff.workDone.splice(workDoneIndex, 1);
-
-    // Save the staff document with the updated array
-    await staff.save();
-
-    res
-      .status(200)
-      .json({ status: true, message: "Work done entry deleted successfully" });
+    res.status(200).json({
+      status: true,
+      message: "Work done entry deleted successfully!",
+      data: staff,
+    });
   } catch (error) {
     console.error("Error deleting work done entry:", error);
     res.status(500).json({
       status: false,
       message: "An error occurred while deleting the work done entry",
-      error: error.message,
-      stack: error.stack, // Include stack trace for debugging
     });
   }
 });
