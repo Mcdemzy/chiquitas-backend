@@ -6,48 +6,29 @@ import nodemailer from "nodemailer";
 
 const router = express.Router();
 
-// Utility function to handle errors
-const handleError = (res, statusCode, message) => {
-  return res.status(statusCode).json({ status: false, error: message });
-};
-
-// Middleware to verify user
-const verifyUser = async (req, res, next) => {
-  try {
-    const token = req.cookies.token;
-    if (!token) {
-      return handleError(res, 401, "No token provided");
-    }
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findOne({ email: decoded.email });
-
-    if (!user) {
-      return handleError(res, 404, "User not found");
-    }
-
-    req.user = user; // Attach user to request object
-    next();
-  } catch (err) {
-    return handleError(res, 401, "Invalid token");
-  }
-};
-
-// Signup route
 router.post("/signup", async (req, res) => {
   try {
     const { firstname, lastname, email, password } = req.body;
 
+    // Check if all fields are provided
     if (!firstname || !lastname || !email || !password) {
-      return handleError(res, 400, "All fields are required");
+      return res
+        .status(400)
+        .json({ status: false, error: "All fields are required" });
     }
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return handleError(res, 409, "Email is already in use");
+    // Check if user already exists
+    const user = await User.findOne({ email });
+    if (user) {
+      return res
+        .status(409)
+        .json({ status: false, error: "Email is already in use" });
     }
 
+    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Create a new user
     const newUser = new User({
       firstname,
       lastname,
@@ -55,6 +36,7 @@ router.post("/signup", async (req, res) => {
       password: hashedPassword,
     });
 
+    // Save the new user
     await newUser.save();
 
     return res
@@ -62,48 +44,57 @@ router.post("/signup", async (req, res) => {
       .json({ status: true, message: "User registered successfully" });
   } catch (error) {
     console.error("Error during user signup:", error);
-    return handleError(res, 500, "Internal Server Error");
+    return res
+      .status(500)
+      .json({ status: false, error: "Internal Server Error" });
   }
 });
 
-// Login route
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Check if all fields are provided
     if (!email || !password) {
-      return handleError(res, 400, "All fields are required");
+      return res
+        .status(400)
+        .json({ status: false, error: "All fields are required" });
     }
 
+    // Find the user by email
     const user = await User.findOne({ email });
     if (!user) {
-      return handleError(res, 401, "User not registered");
+      return res
+        .status(401)
+        .json({ status: false, error: "User not registered" });
     }
 
+    // Check if the password is correct
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
-      return handleError(res, 401, "Incorrect password");
+      return res
+        .status(401)
+        .json({ status: false, error: "Incorrect password" });
     }
 
-    const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, {
+    // Generate a token
+    const token = jwt.sign({ email: user.email }, process.env.KEY, {
       expiresIn: "1h",
     });
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 3600000,
-      sameSite: "lax",
-    });
+    // Set the token as a cookie
+    res.cookie("token", token, { httpOnly: true, maxAge: 3600000 });
 
+    // Successful login
     return res.status(200).json({ status: true, message: "Login successful" });
   } catch (error) {
     console.error("Error during user login:", error);
-    return handleError(res, 500, "Internal Server Error");
+    return res
+      .status(500)
+      .json({ status: false, error: "Internal Server Error" });
   }
 });
 
-// Forgot Password route
 router.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
 
@@ -111,10 +102,10 @@ router.post("/forgot-password", async (req, res) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      return handleError(res, 404, "User not registered");
+      return res.status(404).json({ error: "User not registered" });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ id: user._id }, process.env.KEY, {
       expiresIn: "5m",
     });
 
@@ -135,40 +126,69 @@ router.post("/forgot-password", async (req, res) => {
 
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
-        console.error("Error sending email:", error);
-        return handleError(res, 500, "Error sending email");
+        console.error(error);
+        return res.status(500).json({ error: "Error sending email" });
       } else {
         return res.json({ status: true, message: "Email sent" });
       }
     });
   } catch (err) {
-    console.error("Error in forgot password:", err);
-    return handleError(res, 500, "Internal server error");
+    console.error(err);
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// Reset Password route
 router.post("/reset-password/:token", async (req, res) => {
   const { token } = req.params;
   const { password } = req.body;
   try {
-    const decoded = await jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = await jwt.verify(token, process.env.KEY);
     const id = decoded.id;
-    const hashedPassword = await bcrypt.hash(password, 10);
-    await User.findByIdAndUpdate(id, { password: hashedPassword });
-    return res.json({ status: true, message: "Password updated successfully" });
+    const hashPassword = await bcrypt.hash(password, 10);
+    await User.findByIdAndUpdate({ _id: id }, { password: hashPassword });
+    return res.json({ status: true, message: "Updated Password" });
   } catch (err) {
-    console.error("Error resetting password:", err);
-    return handleError(res, 400, "Invalid or expired token");
+    return res.json("Invalid token");
   }
 });
 
-// Verify User route
+// const verifyUser = async (req, res, next) => {
+//   try {
+//     const token = req.cookies.token;
+//     if (!token) {
+//       return res.json({ status: false, message: "No token" });
+//     }
+//     const decoded = jwt.verify(token, process.env.KEY);
+//     const user = await User.findOne({ email: decoded.email });
+
+//     if (!user) {
+//       return res.json({ status: false, message: "User not found" });
+//     }
+
+//     req.user = user; // Attach user to request object
+//     next();
+//   } catch (err) {
+//     return res.json({ status: false, error: err.message });
+//   }
+// };
+
+const verifyUser = async (req, res, next) => {
+  try {
+    const token = req.cookies.token;
+    if (!token) {
+      return res.json({ status: false, message: "No token" });
+    }
+    const decoded = await jwt.verify(token, process.env.KEY);
+    next();
+  } catch (err) {
+    return res.json(err);
+  }
+};
+
 router.get("/verify", verifyUser, (req, res) => {
-  return res.json({ status: true, user: req.user });
+  return res.json({ status: true, message: "authorized" });
 });
 
-// Logout route
 router.get("/logout", (req, res) => {
   res.clearCookie("token");
   return res.json({ status: true, message: "Logged out" });
