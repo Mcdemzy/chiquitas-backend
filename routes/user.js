@@ -79,7 +79,7 @@ router.post("/login", async (req, res) => {
 
     // Generate a token
     const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "2 days",
     });
 
     // Set the token as a cookie
