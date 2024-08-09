@@ -166,7 +166,7 @@ const verifyUser = async (req, res, next) => {
       return res.status(401).json({ status: false, message: "No token" });
     }
     const decoded = await jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // Optionally attach decoded user to the request
+    // req.user = decoded; // Optionally attach decoded user to the request
     next();
   } catch (err) {
     console.error("Error verifying token:", err);
