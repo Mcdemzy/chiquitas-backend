@@ -174,4 +174,32 @@ router.get("/logout", (req, res) => {
   return res.json({ status: true, message: "Logged out" });
 });
 
+//added
+router.get("/user", verifyUser, async (req, res) => {
+  try {
+    // req.user is available here because it's attached by the verifyUser middleware
+    const user = req.user;
+
+    // Return all the data for the authenticated user
+    return res.status(200).json({
+      status: true,
+      user: {
+        id: user._id,
+        firstname: user.firstname,
+        lastname: user.lastname,
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        // Include any other relevant fields from the User model
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    return res
+      .status(500)
+      .json({ status: false, error: "Internal Server Error" });
+  }
+});
+
 export { router as UserRouter };
