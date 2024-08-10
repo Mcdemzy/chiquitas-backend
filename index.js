@@ -25,6 +25,8 @@ const corsOptions = {
     "https://chiquitas-ims.vercel.app",
     "https://chiquitas-ims-jet.vercel.app/",
     "https://chiquitas-ims-jet.vercel.app",
+    "https://www.chiquitasinventory.com",
+    "https://www.chiquitasinventory.com/"
   ],
   credentials: true,
 };
