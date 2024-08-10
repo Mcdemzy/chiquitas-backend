@@ -221,6 +221,8 @@ router.get("/verify", verifyUser, (req, res) => {
 // Logout route
 router.get("/logout", (req, res) => {
   res.clearCookie("token");
+  localStorage.removeItem("token"); // Remove token from local storage
+
   return res.json({ status: true, message: "Logged out" });
 });
 
