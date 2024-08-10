@@ -5,7 +5,19 @@ import { User } from "../models/User.js";
 import nodemailer from "nodemailer";
 
 const router = express.Router();
+// Middleware to verify the token
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1]; // Bearer token
 
+  if (!token) return res.sendStatus(401); // If no token is provided
+
+  jwt.verify(token, process.env.KEY, (err, user) => {
+    if (err) return res.sendStatus(403); // Invalid token
+    req.user = user;
+    next();
+  });
+};
 // Utility function to handle errors
 const handleError = (res, statusCode, message) => {
   return res.status(statusCode).json({ status: false, error: message });
@@ -221,8 +233,6 @@ router.get("/verify", verifyUser, (req, res) => {
 // Logout route
 router.get("/logout", (req, res) => {
   res.clearCookie("token");
-  localStorage.removeItem("token"); // Remove token from local storage
-
   return res.json({ status: true, message: "Logged out" });
 });
 
@@ -254,4 +264,22 @@ router.get("/user", verifyUser, async (req, res) => {
   }
 });
 
+// Endpoint to get user details
+router.get("/me", authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.user.email });
+    if (!user) {
+      return res.status(404).json({ status: false, error: "User not found" });
+    }
+
+    // Return user details excluding sensitive info like password
+    const { password, ...userDetails } = user.toObject();
+    return res.status(200).json({ status: true, user: userDetails });
+  } catch (error) {
+    console.error("Error fetching user details:", error);
+    return res
+      .status(500)
+      .json({ status: false, error: "Internal Server Error" });
+  }
+});
 export { router as UserRouter };
