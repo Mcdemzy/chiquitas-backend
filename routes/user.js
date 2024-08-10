@@ -94,6 +94,7 @@ router.post("/login", async (req, res) => {
       secure: process.env.NODE_ENV === "production",
       maxAge: 3600000,
       sameSite: "lax",
+      domain: "https://chiquitas-backend.vercel.app/",
     });
 
     return res.status(200).json({ status: true, message: "Login successful" });
