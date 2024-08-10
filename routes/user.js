@@ -134,6 +134,7 @@ router.post("/login", async (req, res) => {
     const token = jwt.sign({ email: user.email }, process.env.KEY, {
       expiresIn: "1h",
     });
+    console.log(token);
 
     // Set the token as a cookie
     res.cookie("token", token, { httpOnly: true, maxAge: 3600000 });
