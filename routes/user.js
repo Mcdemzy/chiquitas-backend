@@ -67,42 +67,91 @@ router.post("/signup", async (req, res) => {
 });
 
 // Login route
+// router.post("/login", async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     if (!email || !password) {
+//       return handleError(res, 400, "All fields are required");
+//     }
+
+//     const user = await User.findOne({ email });
+//     if (!user) {
+//       return handleError(res, 401, "User not registered");
+//     }
+
+//     const isValidPassword = await bcrypt.compare(password, user.password);
+//     if (!isValidPassword) {
+//       return handleError(res, 401, "Incorrect password");
+//     }
+
+//     const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, {
+//       expiresIn: "1h",
+//     });
+
+//     res.cookie("token", token, {
+//       httpOnly: true,
+//       secure: process.env.NODE_ENV === "production",
+//       maxAge: 3600000,
+//       sameSite: "lax",
+//     });
+
+//     return res.status(200).json({ status: true, message: "Login successful" });
+//   } catch (error) {
+//     console.error("Error during user login:", error);
+//     return handleError(res, 500, "Internal Server Error");
+//   }
+// });
+// added
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Check if all fields are provided
     if (!email || !password) {
-      return handleError(res, 400, "All fields are required");
+      return res
+        .status(400)
+        .json({ status: false, error: "All fields are required" });
     }
 
+    // Find the user by email
     const user = await User.findOne({ email });
     if (!user) {
-      return handleError(res, 401, "User not registered");
+      return res
+        .status(401)
+        .json({ status: false, error: "User not registered" });
     }
 
+    // Check if the password is correct
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
-      return handleError(res, 401, "Incorrect password");
+      return res
+        .status(401)
+        .json({ status: false, error: "Incorrect password" });
     }
 
-    const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, {
+    // Generate a token
+    const token = jwt.sign({ email: user.email }, process.env.KEY, {
       expiresIn: "1h",
     });
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 3600000,
-      sameSite: "lax",
-    });
+    // Set the token as a cookie
+    res.cookie("token", token, { httpOnly: true, maxAge: 3600000 });
 
-    return res.status(200).json({ status: true, message: "Login successful" });
+    // Successful login
+    return res.status(200).json({
+      status: true,
+      message: "Login successful",
+      token: token, // Include the token in the response body
+    });
   } catch (error) {
     console.error("Error during user login:", error);
-    return handleError(res, 500, "Internal Server Error");
+    return res
+      .status(500)
+      .json({ status: false, error: "Internal Server Error" });
   }
 });
-
+// end added
 // Forgot Password route
 router.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
