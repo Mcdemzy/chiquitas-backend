@@ -26,7 +26,7 @@ const corsOptions = {
     "https://chiquitas-ims-jet.vercel.app/",
     "https://chiquitas-ims-jet.vercel.app",
     "https://www.chiquitasinventory.com",
-    "https://www.chiquitasinventory.com/"
+    "https://www.chiquitasinventory.com/",
   ],
   credentials: true,
 };
@@ -50,7 +50,7 @@ const connectDB = async () => {
     console.log("MongoDB connected");
   } catch (error) {
     console.error("MongoDB connection error:", error);
-    process.exit(1); // Exit process with failure
+    process.exit(1); // Exit process with failure /
   }
 };
 
