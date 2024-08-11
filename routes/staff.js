@@ -220,31 +220,28 @@ router.get("/total-staffs", async (req, res) => {
   }
 });
 
-router.delete("/staff/:staffId/workdone/:workdoneId", async (req, res) => {
-  const { staffId, workdoneId } = req.params;
-
-  console.log(
-    `Deleting work done entry with ID ${workdoneId} for staff with ID ${staffId}`
-  );
+// DELETE route to remove a specific work done entry
+router.delete("/delete-work-done/:staffId/:workId", async (req, res) => {
+  const { staffId, workId } = req.params;
 
   try {
-    const staff = await Staff.findByIdAndUpdate(
+    // Find and update the staff member by ID, pulling the specific work done entry
+    const result = await Staff.findByIdAndUpdate(
       staffId,
-      { $pull: { workDone: { _id: workdoneId } } },
-      { new: true }
+      { $pull: { workDone: { _id: workId } } },
+      { new: true } // Return the updated document
     );
 
-    if (!staff) {
-      console.log(`Staff with ID ${staffId} not found`);
-      return res
-        .status(404)
-        .json({ status: false, message: "Staff not found" });
+    if (!result) {
+      return res.status(404).json({
+        status: false,
+        message: "Staff not found",
+      });
     }
 
     res.status(200).json({
       status: true,
       message: "Work done entry deleted successfully!",
-      data: staff,
     });
   } catch (error) {
     console.error("Error deleting work done entry:", error);
