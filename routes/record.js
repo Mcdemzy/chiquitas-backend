@@ -4,9 +4,7 @@ import { Stock } from "../models/Stock.js";
 
 const router = express.Router();
 
-// Endpoint for adding records
-// Add a new record and update stock quantityLeft
-// Add a new record and update stock quantityLeft
+// Endpoint for adding a new record and updating stock quantityLeft
 router.post("/add-record", async (req, res) => {
   const {
     productName,
@@ -37,7 +35,7 @@ router.post("/add-record", async (req, res) => {
     if (parseInt(quantity, 10) > stock.quantityLeft) {
       return res.status(400).json({
         status: false,
-        error: `Quantity exceeds available stock. Only ${stock.quantityLeft} left.`,
+        error: `The quantity exceeds the available stock. Only ${stock.quantityLeft} units are left. Please reduce the quantity.`,
       });
     }
 
@@ -67,9 +65,10 @@ router.post("/add-record", async (req, res) => {
       "Error adding record and updating stock quantityLeft:",
       error
     );
-    res
-      .status(500)
-      .json({ status: false, error: "An error occurred. Please try again." });
+    res.status(500).json({
+      status: false,
+      error: "An unexpected error occurred. Please try again later.",
+    });
   }
 });
 
