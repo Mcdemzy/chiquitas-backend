@@ -27,10 +27,18 @@ router.post("/add-record", async (req, res) => {
   }
 
   try {
-    // Find the stock and update its quantityLeft
+    // Find the stock and check its quantityLeft
     const stock = await Stock.findOne({ productName });
     if (!stock) {
       return res.status(404).json({ status: false, error: "Stock not found." });
+    }
+
+    // Validate the quantity
+    if (parseInt(quantity, 10) > stock.quantityLeft) {
+      return res.status(400).json({
+        status: false,
+        error: `Quantity exceeds available stock. Only ${stock.quantityLeft} left.`,
+      });
     }
 
     // Create a new record
@@ -46,6 +54,7 @@ router.post("/add-record", async (req, res) => {
     });
     await newRecord.save();
 
+    // Update the stock quantityLeft
     stock.quantityLeft -= parseInt(quantity, 10);
     await stock.save();
 
