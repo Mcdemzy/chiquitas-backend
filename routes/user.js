@@ -192,7 +192,7 @@ router.post("/forgot-password", async (req, res) => {
       from: process.env.EMAIL_USER,
       to: email,
       subject: "Reset Password",
-      text: `http://localhost:5173/reset-password/${token}`,
+      text: `https://www.chiquitasinventory.com/reset-password/${token}`,
     };
 
     transporter.sendMail(mailOptions, (error, info) => {
