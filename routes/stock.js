@@ -191,4 +191,4 @@ router.get("/recent-stocks", async (req, res) => {
 
 export { router as StockRouter };
 
-// Now I'll need your help with the implementation right but first I want you to explain what you think I want if you are correct then I'll tell you to proceed okay
+// okay, Now I'll need your help with the implementation right but first I want you to explain what you think I want if you are correct then I'll tell you to proceed okay
